@@ -49,6 +49,23 @@ async function seed() {
       console.log(`Seeded vehicle: ${v.registration_number} (${v.model})`);
     }
 
+    // Drivers
+    const demoDrivers = [
+      { name: 'Alex Kumar',    license_number: 'MH-DL-2020-001', license_category: 'HMV', license_expiry: '2027-12-31', contact_number: '+91 9800000001', safety_score: 92 },
+      { name: 'Suresh Patil',  license_number: 'MH-DL-2019-045', license_category: 'LMV', license_expiry: '2027-06-15', contact_number: '+91 9800000002', safety_score: 88 },
+      { name: 'Rajesh Verma',  license_number: 'MH-DL-2021-112', license_category: 'HMV', license_expiry: '2028-03-20', contact_number: '+91 9800000003', safety_score: 95 },
+      { name: 'Mohan Singh',   license_number: 'MH-DL-2018-078', license_category: 'LMV', license_expiry: '2026-09-10', contact_number: '+91 9800000004', safety_score: 80 },
+    ];
+    for (const d of demoDrivers) {
+      await client.query(
+        `INSERT INTO drivers (name, license_number, license_category, license_expiry, contact_number, safety_score)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (license_number) DO NOTHING`,
+        [d.name, d.license_number, d.license_category, d.license_expiry, d.contact_number, d.safety_score]
+      );
+      console.log(`Seeded driver: ${d.name} (${d.license_number})`);
+    }
+
     await client.query('COMMIT');
     console.log('Seeding completed successfully');
   } catch (error) {
