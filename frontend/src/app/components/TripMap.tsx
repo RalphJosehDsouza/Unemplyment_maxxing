@@ -39,7 +39,9 @@ const CITY_COORDS: Record<string, [number, number]> = {
 };
 
 async function geocode(place: string): Promise<[number, number] | null> {
+  if (!place) return [19.7515, 75.7139];
   const normalized = place.trim().toLowerCase();
+  if (!normalized) return [19.7515, 75.7139];
   
   // 1. Check local dictionary first
   for (const [city, coords] of Object.entries(CITY_COORDS)) {
@@ -51,7 +53,10 @@ async function geocode(place: string): Promise<[number, number] | null> {
   // coordinate near Maharashtra based on the string length.
   const offsetLat = (normalized.length % 10) * 0.1;
   const offsetLon = (normalized.charCodeAt(0) % 10) * 0.1;
-  return [19.7515 + offsetLat, 75.7139 + offsetLon];
+  
+  const lat = 19.7515 + (isNaN(offsetLat) ? 0 : offsetLat);
+  const lon = 75.7139 + (isNaN(offsetLon) ? 0 : offsetLon);
+  return [lat, lon];
 }
 
 // ── Route via OSRM demo server ──────────────────────────────────────────────

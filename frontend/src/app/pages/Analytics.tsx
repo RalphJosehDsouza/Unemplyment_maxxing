@@ -236,7 +236,7 @@ export default function Analytics() {
     ]
   };
 
-  const chartOptions = {
+  const chartOptions: any = {
     responsive: true,
     maintainAspectRatio: true,
     aspectRatio: 1.8,
@@ -249,8 +249,8 @@ export default function Analytics() {
       },
       tooltip: {
         backgroundColor: 'var(--card)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
+        titleColor: textColor,
+        bodyColor: textColor,
         borderColor: 'var(--border)',
         borderWidth: 0.5,
       }
@@ -323,12 +323,12 @@ export default function Analytics() {
       
       // Add title
       pdf.setFontSize(20);
-      pdf.setFont(undefined, 'bold');
+      pdf.setFont('helvetica', 'bold');
       pdf.text('Analytics Report', 15, 18);
       
       // Add metadata
       pdf.setFontSize(9);
-      pdf.setFont(undefined, 'normal');
+      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(90, 90, 90);
       
       const now = new Date();

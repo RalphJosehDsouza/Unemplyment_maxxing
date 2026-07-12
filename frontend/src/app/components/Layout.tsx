@@ -32,7 +32,7 @@ const NAV: NavItem[] = [
   { to: '/drivers', label: 'Drivers', icon: Users, roles: ['FLEET_MANAGER', 'SAFETY_OFFICER'] },
   { to: '/trips', label: 'Trips', icon: RouteIcon, roles: ALL },
   { to: '/dispatch', label: 'Dispatch Advisor', icon: Sparkles, roles: ['FLEET_MANAGER'] },
-  { to: '/maintenance', label: 'Maintenance', icon: Wrench, roles: ['FLEET_MANAGER'], soon: true },
+  { to: '/maintenance', label: 'Maintenance', icon: Wrench, roles: ['FLEET_MANAGER'] },
   { to: '/fuel', label: 'Fuel & Expenses', icon: Fuel, roles: ['FINANCIAL_ANALYST', 'FLEET_MANAGER'] },
   { to: '/reports', label: 'Reports', icon: BarChart2, roles: ['FINANCIAL_ANALYST', 'FLEET_MANAGER'] },
 ];
