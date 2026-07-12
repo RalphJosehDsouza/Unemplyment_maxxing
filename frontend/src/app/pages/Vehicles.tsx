@@ -252,13 +252,13 @@ export default function Vehicles() {
         </div>
       )}
 
-      {/* Table */}
-      <div style={{ border: '1px solid var(--border)', background: 'var(--surface)', overflowX: 'auto' }}>
+      {/* Table (contained scroll — ~5 rows, header sticks) */}
+      <div style={{ border: '1px solid var(--border)', background: 'var(--surface)', overflow: 'auto', maxHeight: 340 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               {['Registration', 'Model', 'Type', 'Capacity', 'Odometer', 'Cost', 'Status', ''].map((h, i) => (
-                <th key={i} style={{ ...mono, fontSize: '0.56rem', letterSpacing: '0.14em', color: 'var(--muted-foreground)', textTransform: 'uppercase', textAlign: i >= 3 && i <= 5 ? 'right' : 'left', padding: '0.7rem 1rem', fontWeight: 400, whiteSpace: 'nowrap' }}>
+                <th key={i} style={{ ...mono, fontSize: '0.56rem', letterSpacing: '0.14em', color: 'var(--muted-foreground)', textTransform: 'uppercase', textAlign: i >= 3 && i <= 5 ? 'right' : 'left', padding: '0.7rem 1rem', fontWeight: 400, whiteSpace: 'nowrap', position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
                   {h}
                 </th>
               ))}

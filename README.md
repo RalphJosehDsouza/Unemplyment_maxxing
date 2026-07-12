@@ -92,21 +92,6 @@ RBAC is enforced both on the client (`ProtectedRoute`) and the server (`authenti
 
 ---
 
-## Pages & Status
-
-| Route | Page | Roles | Status |
-|---|---|---|---|
-| `/login` | Authentication | All | ✅ Built |
-| `/dashboard` | KPI Overview | All (role-filtered) | ✅ Built |
-| `/vehicles` | Vehicle Registry (CRUD) | Fleet Manager, Admin | ✅ Built |
-| `/drivers` | Driver Management | Fleet Manager, Safety Officer | 🔜 Planned |
-| `/trips` | Trip Management | All | 🔜 Planned |
-| `/maintenance` | Maintenance Log | Fleet Manager | 🔜 Planned |
-| `/fuel` | Fuel & Expense Tracking | Financial Analyst, Fleet Manager | 🔜 Planned |
-| `/reports` | Analytics & Reports | Financial Analyst | 🔜 Planned |
-
----
-
 ## API Reference (current)
 
 | Method | Endpoint | Auth | Description |
