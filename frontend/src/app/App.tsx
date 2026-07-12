@@ -7,6 +7,7 @@ import Trips from './pages/Trips';
 import Fuel from './pages/Fuel';
 import Reports from './pages/Reports';
 import DispatchAdvisor from './pages/DispatchAdvisor';
+import Maintenance from './pages/Maintenance';
 import Layout from './components/Layout';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
@@ -34,6 +35,8 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['FLEET_MANAGER', 'FINANCIAL_ANALYST']} />}>
             <Route path="/fuel" element={<Fuel />} />
             <Route path="/reports" element={<Reports />} />
+          <Route element={<ProtectedRoute allowedRoles={['FLEET_MANAGER']} />}>
+            <Route path="/maintenance" element={<Maintenance />} />
           </Route>
         </Route>
       </Route>

@@ -10,6 +10,7 @@ import fuelRoutes from './routes/fuel.js';
 import expenseRoutes from './routes/expenses.js';
 import reportRoutes from './routes/reports.js';
 import advisorRoutes from './routes/advisor.js';
+import maintenanceRoutes from './routes/maintenance.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use('/api/fuel', fuelRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/advisor', advisorRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 // Verify DB connectivity, then start the server.
 pool
