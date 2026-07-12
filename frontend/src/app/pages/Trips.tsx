@@ -7,6 +7,7 @@ import {
   TRIP_STATUSES, TRIP_STATUS_STYLES,
   Trip, TripStatus, AvailableVehicle, AvailableDriver,
 } from '../../lib/constants';
+import TripMap from '../components/TripMap';
 
 const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 const display: React.CSSProperties = { fontFamily: "'Barlow Condensed', sans-serif" };
@@ -426,6 +427,9 @@ export default function Trips() {
                       )}
                     </div>
                   )}
+
+                  {/* Route Map */}
+                  <TripMap source={t.source} destination={t.destination} status={t.status} />
                 </div>
               ))}
             </div>
