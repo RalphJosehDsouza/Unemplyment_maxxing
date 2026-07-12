@@ -20,6 +20,7 @@ async function seed() {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query('TRUNCATE TABLE maintenance_logs CASCADE;');
 
     // Users
     for (const u of demoUsers) {
@@ -64,6 +65,73 @@ async function seed() {
         [d.name, d.license_number, d.license_category, d.license_expiry, d.contact_number, d.safety_score]
       );
       console.log(`Seeded driver: ${d.name} (${d.license_number})`);
+    }
+
+    // Maintenance Logs
+    const { rows: dbVehicles } = await client.query('SELECT id, registration_number FROM vehicles');
+    const vehicleMap = {};
+    dbVehicles.forEach(v => {
+      vehicleMap[v.registration_number] = v.id;
+    });
+
+    const demoLogs = [
+      {
+        registration_number: 'MH04-GH-3456', // In Shop
+        maintenance_type: 'Engine Repair',
+        description: 'Engine cylinder misfire, replacing spark plugs and gasket',
+        cost: 24500.00,
+        status: 'OPEN',
+        started_at: 'now() - INTERVAL \'3 days\'',
+        completed_at: null
+      },
+      {
+        registration_number: 'MH12-AB-1234',
+        maintenance_type: 'Brake Service',
+        description: 'Brake pad replacement and disc resurfacing',
+        cost: 8500.00,
+        status: 'COMPLETED',
+        started_at: 'now() - INTERVAL \'15 days\'',
+        completed_at: 'now() - INTERVAL \'14 days\''
+      },
+      {
+        registration_number: 'MH14-CD-5678',
+        maintenance_type: 'General Service',
+        description: '20,000 km routine inspection and engine oil flush',
+        cost: 4500.00,
+        status: 'COMPLETED',
+        started_at: 'now() - INTERVAL \'45 days\'',
+        completed_at: 'now() - INTERVAL \'44 days\''
+      },
+      {
+        registration_number: 'MH01-EF-9012',
+        maintenance_type: 'Tire Replacement',
+        description: 'Replaced front tyres due to uneven tread wear',
+        cost: 12000.00,
+        status: 'COMPLETED',
+        started_at: 'now() - INTERVAL \'60 days\'',
+        completed_at: 'now() - INTERVAL \'59 days\''
+      },
+      {
+        registration_number: 'MH04-GH-3456',
+        maintenance_type: 'Transmission',
+        description: 'Gearbox oil leak repair and clutch plate adjustment',
+        cost: 32000.00,
+        status: 'COMPLETED',
+        started_at: 'now() - INTERVAL \'90 days\'',
+        completed_at: 'now() - INTERVAL \'87 days\''
+      }
+    ];
+
+    for (const log of demoLogs) {
+      const vehicleId = vehicleMap[log.registration_number];
+      if (vehicleId) {
+        await client.query(
+          `INSERT INTO maintenance_logs (vehicle_id, maintenance_type, description, cost, status, started_at, completed_at)
+           VALUES ($1, $2, $3, $4, $5, ${log.started_at}, ${log.completed_at ? log.completed_at : 'NULL'})`,
+          [vehicleId, log.maintenance_type, log.description, log.cost, log.status]
+        );
+        console.log(`Seeded maintenance log for: ${log.registration_number}`);
+      }
     }
 
     await client.query('COMMIT');

@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Vehicles from './pages/Vehicles';
 import Drivers from './pages/Drivers';
 import Trips from './pages/Trips';
+import Maintenance from './pages/Maintenance';
 import Layout from './components/Layout';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
@@ -26,6 +27,10 @@ export default function App() {
           </Route>
 
           <Route path="/trips" element={<Trips />} />
+
+          <Route element={<ProtectedRoute allowedRoles={['FLEET_MANAGER']} />}>
+            <Route path="/maintenance" element={<Maintenance />} />
+          </Route>
         </Route>
       </Route>
 

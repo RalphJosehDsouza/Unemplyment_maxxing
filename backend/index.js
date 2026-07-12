@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.js';
 import vehicleRoutes from './routes/vehicles.js';
 import driverRoutes from './routes/drivers.js';
 import tripRoutes from './routes/trips.js';
+import maintenanceRoutes from './routes/maintenance.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/trips', tripRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 // Verify DB connectivity, then start the server.
 pool
