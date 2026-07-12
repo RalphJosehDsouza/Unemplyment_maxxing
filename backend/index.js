@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { pool } from './db.js';
 import authRoutes from './routes/auth.js';
 import vehicleRoutes from './routes/vehicles.js';
+import analyticsRoutes from './routes/analytics.js';
 import driverRoutes from './routes/drivers.js';
 import tripRoutes from './routes/trips.js';
 import fuelRoutes from './routes/fuel.js';
@@ -27,6 +28,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/fuel', fuelRoutes);

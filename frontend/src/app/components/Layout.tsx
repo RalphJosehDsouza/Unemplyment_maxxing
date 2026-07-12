@@ -27,6 +27,7 @@ const ALL = ['ADMIN', 'FLEET_MANAGER', 'SAFETY_OFFICER', 'FINANCIAL_ANALYST'];
 
 const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ALL },
+  { to: '/analytics', label: 'Analytics', icon: BarChart2, roles: ALL },
   { to: '/vehicles', label: 'Vehicles', icon: Truck, roles: ['FLEET_MANAGER'] },
   { to: '/drivers', label: 'Drivers', icon: Users, roles: ['FLEET_MANAGER', 'SAFETY_OFFICER'] },
   { to: '/trips', label: 'Trips', icon: RouteIcon, roles: ALL },
