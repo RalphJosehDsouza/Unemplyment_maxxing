@@ -108,6 +108,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', canManage, async (req, res) => {
   const { errors, out } = validateDriver(req.body);
   if (errors.length) return res.status(400).json({ message: errors[0], errors });
+  if (out.status === 'ON_TRIP') return res.status(400).json({ message: 'A new driver cannot be created directly as ON_TRIP.' });
 
   try {
     const { rows } = await query(
@@ -136,24 +137,33 @@ router.post('/', canManage, async (req, res) => {
 
 // PUT /api/drivers/:id
 router.put('/:id', canManage, async (req, res) => {
-  const { errors, out } = validateDriver(req.body, { partial: true });
-  if (errors.length) return res.status(400).json({ message: errors[0], errors });
-
-  const keys = Object.keys(out);
-  if (!keys.length) return res.status(400).json({ message: 'No valid fields to update' });
-
-  const setClauses = keys.map((k, i) => `${k} = $${i + 1}`);
-  const params = keys.map((k) => out[k]);
-  params.push(req.params.id);
-
   try {
+    const { rows: existing } = await query('SELECT status FROM drivers WHERE id = $1', [req.params.id]);
+    if (!existing[0]) return res.status(404).json({ message: 'Driver not found' });
+
+    const { errors, out } = validateDriver(req.body, { partial: true });
+    if (errors.length) return res.status(400).json({ message: errors[0], errors });
+
+    if (existing[0].status === 'ON_TRIP' && out.status && out.status !== 'ON_TRIP') {
+      return res.status(409).json({ message: 'Cannot manually change status of a driver that is currently on a trip.' });
+    }
+    if (out.status === 'ON_TRIP' && existing[0].status !== 'ON_TRIP') {
+      return res.status(409).json({ message: 'ON_TRIP status is managed automatically by active trips.' });
+    }
+
+    const keys = Object.keys(out);
+    if (!keys.length) return res.status(400).json({ message: 'No valid fields to update' });
+
+    const setClauses = keys.map((k, i) => `${k} = $${i + 1}`);
+    const params = keys.map((k) => out[k]);
+    params.push(req.params.id);
+
     const { rows } = await query(
       `UPDATE drivers SET ${setClauses.join(', ')}, updated_at = now()
        WHERE id = $${params.length}
        RETURNING ${COLS}`,
       params
     );
-    if (!rows[0]) return res.status(404).json({ message: 'Driver not found' });
     res.json({ driver: rows[0] });
   } catch (error) {
     if (error.code === '23505') {

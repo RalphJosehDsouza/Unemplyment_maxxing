@@ -370,8 +370,12 @@ export default function Drivers() {
                 </div>
                 <div>
                   <label style={labelStyle}>Status</label>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} style={{ ...inputStyle, cursor: 'pointer' }}>
-                    {DRIVER_STATUSES.map((s) => (<option key={s} value={s}>{STATUS_STYLES[s].label}</option>))}
+                  <select disabled={form.status === 'ON_TRIP'} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} style={{ ...inputStyle, cursor: form.status === 'ON_TRIP' ? 'not-allowed' : 'pointer', opacity: form.status === 'ON_TRIP' ? 0.7 : 1 }}>
+                    {DRIVER_STATUSES.map((s) => (
+                      <option key={s} value={s} disabled={s === 'ON_TRIP'}>
+                        {STATUS_STYLES[s].label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
