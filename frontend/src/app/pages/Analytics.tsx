@@ -119,12 +119,12 @@ export default function Analytics() {
           console.log('Financial data:', data);
           setFinancialData(data);
         }
-        if (visibleCharts.includes('drivers')) {
-          const driverResult = results[resultIndex++];
-          console.log('Driver result:', driverResult);
-          setDriverStatusData(driverResult?.driverStatusData || []);
-          setDriverSafetyData(driverResult?.driverSafetyData || []);
-        }
+        // if (visibleCharts.includes('drivers')) {
+        //   const driverResult = results[resultIndex++];
+        //   console.log('Driver result:', driverResult);
+        //   setDriverStatusData(driverResult?.driverStatusData || []);
+        //   setDriverSafetyData(driverResult?.driverSafetyData || []);
+        // }
         if (visibleCharts.includes('maintenance')) {
           const data = results[resultIndex++]?.maintenanceData || [];
           console.log('Maintenance data:', data);
