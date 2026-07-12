@@ -1,50 +1,84 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Truck } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import { vehiclesApi } from '../../lib/services/vehicles';
+import { ROLE_LABELS, STATUS_STYLES, VEHICLE_STATUSES, Vehicle } from '../../lib/constants';
+import CompleteOrderButton from '../../components/buttons/completeOrderButton';
+
+const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+const display: React.CSSProperties = { fontFamily: "'Barlow Condensed', sans-serif" };
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { isNight } = useTheme();
+  const navigate = useNavigate();
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+
+  useEffect(() => {
+    vehiclesApi
+      .list()
+      .then((d) => setVehicles(d.vehicles))
+      .catch(() => setVehicles([]));
+  }, []);
+
+  const counts: Record<string, number> = { AVAILABLE: 0, ON_TRIP: 0, IN_SHOP: 0, RETIRED: 0 };
+  vehicles.forEach((v) => (counts[v.status] = (counts[v.status] || 0) + 1));
+  const total = vehicles.length;
+  const active = counts.AVAILABLE + counts.ON_TRIP;
+  const utilization = active > 0 ? Math.round((counts.ON_TRIP / active) * 100) : 0;
+
+  const canManageFleet = user?.role === 'FLEET_MANAGER' || user?.role === 'ADMIN';
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f0f0f0] p-8" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <div className="max-w-4xl mx-auto">
-        <header className="flex items-center justify-between pb-6 border-b border-[rgba(255,255,255,0.08)] mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 flex items-center justify-center bg-white">
-              <Truck size={16} color="#0a0a0a" strokeWidth={2.5} />
-            </div>
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "1.2rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em" }}>
-              TransitOps Dashboard
-            </span>
-          </div>
-          <button 
-            onClick={logout}
-            className="flex items-center gap-2 text-[#a0a0a0] hover:text-white transition-colors"
-          >
-            <LogOut size={16} />
-            <span style={{ fontSize: '0.875rem' }}>Logout</span>
-          </button>
-        </header>
+    <div className="px-6 md:px-10 py-8 max-w-[1200px]">
+      <div style={{ ...mono, fontSize: '0.6rem', letterSpacing: '0.2em', color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+        {ROLE_LABELS[user?.role || ''] || user?.role} · Operations Overview
+      </div>
+      <h1 style={{ ...display, fontSize: '2.2rem', fontWeight: 700, lineHeight: 1, textTransform: 'uppercase', marginBottom: '0.4rem', color: 'var(--foreground)' }}>
+        Welcome, {user?.name?.split(' ')[0] || 'Operator'}
+      </h1>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2rem' }}>
+        Live snapshot of your fleet. More modules (trips, maintenance, fuel &amp; reports) are on the way.
+      </p>
 
-        <main>
-          <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "2.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-            Welcome, {user?.role}
-          </h1>
-          <p className="text-[#a0a0a0] mb-8">
-            You are logged in as {user?.email}. Your role determines what you can see and do here.
-          </p>
+      {/* Fleet KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-px mb-8" style={{ background: 'var(--border)', border: '1px solid var(--border)' }}>
+        <Kpi label="Total Fleet" value={total} color="var(--foreground)" />
+        {VEHICLE_STATUSES.map((s) => (
+          <Kpi key={s} label={STATUS_STYLES[s].label} value={counts[s] || 0} color={STATUS_STYLES[s].fg} />
+        ))}
+        <Kpi label="Utilization" value={`${utilization}%`} color="#3b82f6" />
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Example Card */}
-            <div className="bg-[#141414] border border-[rgba(255,255,255,0.08)] rounded-lg p-6">
-              <h3 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "0.7rem", letterSpacing: "0.14em", color: "#64748b", textTransform: "uppercase", marginBottom: "1rem" }}>
-                Role Specific Action
-              </h3>
-              <p className="text-sm text-[#f0f0f0]">
-                This is a protected area. If you can see this, you are successfully authenticated.
-              </p>
-            </div>
+      {canManageFleet && (
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', padding: '1.75rem' }}>
+          <div style={{ ...mono, fontSize: '0.58rem', letterSpacing: '0.16em', color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
+            Quick Action
           </div>
-        </main>
+          <div style={{ ...display, fontSize: '1.4rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--foreground)', marginBottom: '1.1rem' }}>
+            Vehicle Registry
+          </div>
+          <CompleteOrderButton
+            mode={isNight ? 'night' : 'day'}
+            highDefinition
+            truckColor="#3b82f6"
+            label="Open Vehicle Registry"
+            successLabel="Registry Ready"
+            onComplete={() => navigate('/vehicles')}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Kpi({ label, value, color }: { label: string; value: number | string; color: string }) {
+  return (
+    <div className="p-4" style={{ background: 'var(--surface)' }}>
+      <div style={{ ...display, fontSize: '1.9rem', fontWeight: 700, lineHeight: 1, color }}>{value}</div>
+      <div style={{ ...mono, fontSize: '0.55rem', letterSpacing: '0.12em', color: 'var(--muted-foreground)', textTransform: 'uppercase', marginTop: '0.4rem' }}>
+        {label}
       </div>
     </div>
   );

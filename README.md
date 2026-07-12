@@ -1,6 +1,136 @@
 # TransitOps — Smart Transport Operations Platform
 
-A MERN stack transport operations platform with RBAC, fleet management, trip dispatch, maintenance workflow, and financial analytics.
+A transport operations platform with RBAC, fleet management, trip dispatch, maintenance workflow, and financial analytics.
+
+**Stack:** React (Vite + Tailwind v4) · Express (Node) · PostgreSQL on NeonDB · JWT auth.
+
+---
+
+## Architecture
+
+```
+/frontend        — React app (Vite + Tailwind v4)
+  /src
+    /app
+      /pages       — Login, Dashboard, Vehicles
+      /components  — Layout (sidebar shell), StatusBadge, ui/*
+    /components    — ProtectedRoute (RBAC guard)
+    /context       — AuthContext (JWT + user state)
+    /lib           — api.ts (auth fetch), constants.ts (enums/types)
+    /styles        — theme.css, fonts.css, tailwind.css
+
+/backend         — Express + Node.js API
+  index.js         — app bootstrap + DB connectivity check
+  db.js            — pg connection pool
+  schema.sql       — full PostgreSQL schema (enums, tables, indexes)
+  seed.js          — seeds demo users + sample vehicles
+  /scripts
+    migrate.js     — applies schema.sql to the database
+  /routes          — auth, vehicles
+  /middleware      — auth.js (authenticate + authorize/RBAC)
+```
+
+### Database (NeonDB / PostgreSQL)
+
+Tables: `users`, `vehicles`, `drivers`, `trips`, `maintenance_logs`, `fuel_logs`, `expenses`.
+UUID primary keys, PostgreSQL ENUMs for status fields, foreign keys, CHECK constraints, and indexes on hot columns. See [`backend/schema.sql`](backend/schema.sql).
+
+ENUM types: `user_role`, `vehicle_status`, `driver_status`, `trip_status`, `maintenance_status`, `expense_type`.
+
+---
+
+## Getting Started
+
+### 1. Environment
+
+Create `backend/.env`:
+
+```env
+DATABASE_URL=postgresql://<user>:<password>@<host>/<db>?sslmode=require
+JWT_SECRET=your_secret_key
+PORT=5000
+```
+
+The frontend proxies `/api` → `http://localhost:5000` (see `frontend/vite.config.ts`).
+
+### 2. Install
+
+```bash
+npm run install:all      # root + frontend + backend
+```
+
+### 3. Set up the database (one-time)
+
+```bash
+npm run migrate --prefix backend    # creates tables/enums/indexes
+npm run seed                        # seeds demo users + sample vehicles
+```
+
+### 4. Run
+
+```bash
+npm run dev:all          # backend (:5000) + frontend (:5173)
+# or individually:
+npm run dev:backend
+npm run dev:frontend
+```
+
+---
+
+## Roles & Demo Credentials
+
+Password for all demo accounts: **`password123`**
+
+| Role | Email | Access |
+|---|---|---|
+| Fleet Manager | `fleetmanager@transitops.com` | Vehicles, maintenance, fleet lifecycle |
+| Safety Officer | `safetyofficer@transitops.com` | Drivers, licenses, safety scores |
+| Financial Analyst | `financialanalyst@transitops.com` | Fuel, expenses, reports |
+| Admin | `admin@transitops.com` | Full access across all modules |
+
+RBAC is enforced both on the client (`ProtectedRoute`) and the server (`authenticate` + `authorize` middleware). `ADMIN` passes every role guard.
+
+---
+
+## Pages & Status
+
+| Route | Page | Roles | Status |
+|---|---|---|---|
+| `/login` | Authentication | All | ✅ Built |
+| `/dashboard` | KPI Overview | All (role-filtered) | ✅ Built |
+| `/vehicles` | Vehicle Registry (CRUD) | Fleet Manager, Admin | ✅ Built |
+| `/drivers` | Driver Management | Fleet Manager, Safety Officer | 🔜 Planned |
+| `/trips` | Trip Management | All | 🔜 Planned |
+| `/maintenance` | Maintenance Log | Fleet Manager | 🔜 Planned |
+| `/fuel` | Fuel & Expense Tracking | Financial Analyst, Fleet Manager | 🔜 Planned |
+| `/reports` | Analytics & Reports | Financial Analyst | 🔜 Planned |
+
+---
+
+## API Reference (current)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | — | Email + password → JWT |
+| `GET` | `/api/auth/me` | JWT | Current user |
+| `GET` | `/api/vehicles` | JWT | List (filters: `?status`, `?type`, `?search`) |
+| `GET` | `/api/vehicles/:id` | JWT | Single vehicle |
+| `POST` | `/api/vehicles` | Fleet Manager | Create |
+| `PUT` | `/api/vehicles/:id` | Fleet Manager | Update |
+| `DELETE` | `/api/vehicles/:id` | Fleet Manager | Delete (blocked if on trip / open maintenance) |
+
+---
+
+## Business Rules
+
+- Vehicle registration numbers must be unique (enforced by DB constraint → `409`).
+- Retired / In Shop vehicles are excluded from dispatch (upcoming Trip module).
+- Drivers with expired license or Suspended status cannot be assigned (upcoming).
+- Cargo weight must not exceed vehicle max capacity (upcoming).
+- Dispatching a trip sets vehicle + driver → `On Trip`; completing/cancelling restores `Available` (upcoming).
+- Opening a maintenance record sets vehicle → `In Shop`; closing restores `Available` unless Retired (upcoming).
+
+Status transitions and cross-entity validations live in the backend service/route layer.
 
 ---
 
@@ -13,195 +143,30 @@ A MERN stack transport operations platform with RBAC, fleet management, trip dis
 | `--background` | `#0a0a0a` | Page background — near-black |
 | `--foreground` | `#f0f0f0` | Body text — near-white |
 | `--card` | `#141414` | Card / panel surfaces |
-| `--card-foreground` | `#f0f0f0` | Text on cards |
-| `--primary` | `#ffffff` | Primary CTA, active states, white |
-| `--primary-foreground` | `#0a0a0a` | Text on primary buttons |
+| `--primary` | `#ffffff` | Primary CTA, active states |
 | `--secondary` | `#1c1c1c` | Secondary surfaces, sidebar items |
-| `--secondary-foreground` | `#a0a0a0` | Secondary text |
-| `--muted` | `#181818` | Input backgrounds, subdued surfaces |
-| `--muted-foreground` | `#5a5a5a` | Labels, captions, placeholder text |
-| `--accent` | `#ffffff` | Highlights — white |
-| `--destructive` | `#ff3b3b` | Error states, cancelled trip indicators |
-| `--border` | `rgba(255,255,255,0.10)` | Hairline borders — subtle on dark |
-| `--ring` | `rgba(255,255,255,0.4)` | Focus ring |
-| `--sidebar` | `#0a0a0a` | Sidebar background |
+| `--muted` | `#181818` | Input backgrounds |
+| `--muted-foreground` | `#5a5a5a` | Labels, captions |
+| `--destructive` | `#ff3b3b` | Errors, cancelled/delete |
+| `--border` | `rgba(255,255,255,0.10)` | Hairline borders |
 
-### Chart Colors (for analytics pages)
-
-Monochrome scale — use opacity or grey steps to distinguish data series:
-
-| Token | Hex | Semantic Use |
-|---|---|---|
-| `--chart-1` | `#ffffff` | Primary metric — full white |
-| `--chart-2` | `#888888` | Secondary series |
-| `--chart-3` | `#555555` | Tertiary series |
-| `--chart-4` | `#333333` | Quaternary / background bar |
-| `--chart-5` | `#ff3b3b` | Alert / critical — only non-grey color |
-
----
-
-## Typography
+### Typography
 
 ```
 Display / Headings:  Barlow Condensed — Bold 700, uppercase where structural
 Body / UI:           Inter — Regular 400, Medium 500, SemiBold 600
-Data / Labels:       JetBrains Mono — used for IDs, codes, metrics, table values
+Data / Labels:       JetBrains Mono — IDs, codes, metrics, table values
 ```
 
-### Type Scale
+### Status Badge Colors
 
-| Level | Size | Font | Weight | Usage |
-|---|---|---|---|---|
-| Page title | 1.9rem | Barlow Condensed | 700 | Auth header, section titles |
-| Hero display | 3.2rem | Barlow Condensed | 700 | Landing copy |
-| Section label | 0.65rem | JetBrains Mono | 400 | Form field labels, uppercase |
-| Body | 0.875rem | Inter | 400 | Form inputs, descriptions |
-| Caption | 0.72rem | Inter | 400 | Hints, footer |
-| Data value | 0.68rem | JetBrains Mono | 500 | IDs, license numbers, emails |
+| Status | Text |
+|---|---|
+| Available | `#10b981` |
+| On Trip | `#3b82f6` |
+| In Shop | `#f59e0b` |
+| Retired | `#64748b` |
+| Suspended | `#ef4444` |
+| Off Duty | `#9ca3af` |
 
----
-
-## Spacing & Radius
-
-- **Border radius:** `0.5rem` (8px) — cards, inputs, buttons
-- **Input padding:** `0.7rem 0.9rem`
-- **Card padding:** `1.5rem` default, `1rem` compact
-- **Section gaps:** `1.5rem` between form groups, `2rem` between sections
-
----
-
-## Status Badge Colors
-
-Use these consistently across all status indicators:
-
-| Status | Background | Text | Border |
-|---|---|---|---|
-| Available | `rgba(16,185,129,0.12)` | `#10b981` | `rgba(16,185,129,0.25)` |
-| On Trip | `rgba(59,130,246,0.12)` | `#3b82f6` | `rgba(59,130,246,0.25)` |
-| In Shop | `rgba(245,158,11,0.12)` | `#f59e0b` | `rgba(245,158,11,0.25)` |
-| Retired | `rgba(100,116,139,0.12)` | `#64748b` | `rgba(100,116,139,0.25)` |
-| Suspended | `rgba(239,68,68,0.12)` | `#ef4444` | `rgba(239,68,68,0.25)` |
-| Off Duty | `rgba(107,114,128,0.12)` | `#9ca3af` | `rgba(107,114,128,0.25)` |
-
----
-
-## Component Patterns
-
-### Inputs
-```css
-background: #111827;
-border: 1.5px solid rgba(255,255,255,0.08);
-border-radius: 0.5rem;
-padding: 0.7rem 0.9rem;
-color: #e8eaf0;
-font-size: 0.875rem;
-
-/* Focus state */
-border-color: #f59e0b;
-box-shadow: 0 0 0 3px rgba(245,158,11,0.1);
-```
-
-### Primary Button
-```css
-background: #f59e0b;
-color: #0b0f1a;
-font-weight: 700;
-font-size: 0.875rem;
-padding: 0.78rem 1.25rem;
-border-radius: 0.5rem;
-box-shadow: 0 0 20px rgba(245,158,11,0.25);
-```
-
-### Cards / Panels
-```css
-background: #111827;
-border: 1px solid rgba(255,255,255,0.08);
-border-radius: 0.5rem;
-padding: 1.25rem 1.5rem;
-```
-
-### Section Labels (above inputs / KPIs)
-```css
-font-family: 'JetBrains Mono', monospace;
-font-size: 0.65rem;
-letter-spacing: 0.14em;
-color: #64748b;
-text-transform: uppercase;
-```
-
----
-
-## Pages Reference
-
-| Route | Page | Roles |
-|---|---|---|
-| `/` | Authentication | All |
-| `/dashboard` | KPI Overview | All (role-filtered) |
-| `/vehicles` | Vehicle Registry | Fleet Manager |
-| `/drivers` | Driver Management | Fleet Manager, Safety Officer |
-| `/trips` | Trip Management | Dispatcher |
-| `/maintenance` | Maintenance Log | Fleet Manager |
-| `/fuel` | Fuel & Expense Tracking | Financial Analyst, Fleet Manager |
-| `/reports` | Analytics & Reports | Financial Analyst |
-
----
-
-## MERN Stack Structure
-
-```
-/client          — React frontend (Vite + Tailwind)
-  /src
-    /app          — Page components
-    /components   — Shared UI (StatusBadge, DataTable, KPICard, etc.)
-    /styles       — theme.css, fonts.css
-    /hooks        — useAuth, useFetch, etc.
-    /context      — AuthContext with RBAC
-
-/server          — Express + Node.js backend
-  /routes         — auth, vehicles, drivers, trips, maintenance, fuel
-  /models         — Mongoose schemas
-  /middleware     — authMiddleware, roleGuard
-  /controllers    — Business logic per domain
-
-/db              — MongoDB (Atlas or local)
-```
-
-### Environment Variables
-```env
-MONGO_URI=mongodb://...
-JWT_SECRET=your_secret_key
-JWT_EXPIRES_IN=7d
-PORT=5000
-CLIENT_URL=http://localhost:5173
-```
-
-## Running the Application
-
-- **Backend Only**: `npm run server`
-- **Frontend Only**: `npm run dev`
-- **Full Stack**: `npm run dev:all`
-- **Seed Database**: `npm run seed`
-
----
-
-## Authentication Flow (MERN)
-
-1. **POST** `/api/auth/login` — email + password + role
-2. Server validates credentials, checks role from User document
-3. Returns signed JWT with `{ userId, role, name }`
-4. Client stores JWT in `httpOnly` cookie or `localStorage`
-5. All protected routes verify JWT via `authMiddleware`
-6. `roleGuard(["fleet_manager", "dispatcher"])` restricts endpoint access
-
----
-
-## Business Rules Summary
-
-- Vehicle reg numbers must be unique
-- Retired / In Shop vehicles excluded from dispatch
-- Drivers with expired license or Suspended status cannot be assigned
-- Cargo weight must not exceed vehicle max capacity
-- Dispatching a trip sets vehicle + driver → `On Trip`
-- Completing a trip sets vehicle + driver → `Available`
-- Opening a maintenance record sets vehicle → `In Shop`
-- Closing maintenance sets vehicle → `Available` (unless Retired)
+Radius is `0` throughout (square edges) — see `frontend/src/styles/theme.css`.

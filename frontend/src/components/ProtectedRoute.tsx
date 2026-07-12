@@ -14,9 +14,8 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Role not authorized, redirect to a default authorized page (like dashboard)
-    // Or we could show an 'Unauthorized' page. Let's redirect to dashboard for now.
+  // ADMIN can access everything; otherwise the role must be in the allow-list.
+  if (allowedRoles && user.role !== 'ADMIN' && !allowedRoles.includes(user.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

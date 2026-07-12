@@ -1,8 +1,9 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { pool } from './db.js';
 import authRoutes from './routes/auth.js';
+import vehicleRoutes from './routes/vehicles.js';
 
 dotenv.config();
 
@@ -13,17 +14,23 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Health check
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-.then(() => {
-  console.log('Connected to MongoDB successfully');
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Verify DB connectivity, then start the server.
+pool
+  .query('SELECT 1')
+  .then(() => {
+    console.log('Connected to NeonDB (PostgreSQL) successfully');
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Error connecting to database:', error.message);
+    process.exit(1);
   });
-})
-.catch((error) => {
-  console.error('Error connecting to MongoDB:', error.message);
-});

@@ -1,73 +1,102 @@
 @custom-variant dark (&:is(.dark *));
 
+/* ──────────────────────────────────────────────────────────────
+   LIGHT theme (default :root). Dark theme lives under .dark below.
+   The app boots in dark (see main.tsx), but both are fully defined
+   so the day/night toggle can flip between them.
+   ────────────────────────────────────────────────────────────── */
 :root {
   --font-size: 16px;
-  --background: #0a0a0a;
-  --foreground: #f0f0f0;
-  --card: #141414;
-  --card-foreground: #f0f0f0;
-  --popover: #141414;
-  --popover-foreground: #f0f0f0;
-  --primary: #ffffff;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1c1c1c;
-  --secondary-foreground: #a0a0a0;
-  --muted: #181818;
-  --muted-foreground: #5a5a5a;
-  --accent: #ffffff;
-  --accent-foreground: #0a0a0a;
-  --destructive: #ff3b3b;
+
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --text-strong: #09090b;
+  --text-muted: #52525b;
+  --text-faint: #a1a1aa;
+
+  --surface: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --secondary: #ececef;
+  --secondary-foreground: #52525b;
+  --muted: #f0f0f2;
+  --muted-foreground: #71717a;
+
+  --primary: #18181b;
+  --primary-foreground: #ffffff;
+  --accent: #18181b;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.1);
+
+  --border: rgba(0, 0, 0, 0.10);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --border-faint: rgba(0, 0, 0, 0.06);
   --input: transparent;
-  --input-background: #141414;
-  --switch-background: #333333;
+  --input-background: #ffffff;
+  --switch-background: #cbcbd1;
+  --ring: rgba(0, 0, 0, 0.35);
+
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: rgba(255, 255, 255, 0.4);
-  --chart-1: #ffffff;
-  --chart-2: #888888;
-  --chart-3: #555555;
-  --chart-4: #333333;
-  --chart-5: #ff3b3b;
+
+  --chart-1: #18181b;
+  --chart-2: #71717a;
+  --chart-3: #a1a1aa;
+  --chart-4: #d4d4d8;
+  --chart-5: #dc2626;
   --radius: 0rem;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #f0f0f0;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1c1c1c;
-  --sidebar-accent-foreground: #f0f0f0;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: rgba(255, 255, 255, 0.4);
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ececef;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: rgba(0, 0, 0, 0.10);
+  --sidebar-ring: rgba(0, 0, 0, 0.35);
 }
 
 .dark {
   --background: #0a0a0a;
   --foreground: #f0f0f0;
+  --text-strong: #ffffff;
+  --text-muted: #8a8a8a;
+  --text-faint: #3a3a3a;
+
+  --surface: #0e0e0e;
   --card: #141414;
   --card-foreground: #f0f0f0;
   --popover: #141414;
   --popover-foreground: #f0f0f0;
-  --primary: #ffffff;
-  --primary-foreground: #0a0a0a;
   --secondary: #1c1c1c;
   --secondary-foreground: #a0a0a0;
   --muted: #181818;
   --muted-foreground: #5a5a5a;
+
+  --primary: #ffffff;
+  --primary-foreground: #0a0a0a;
   --accent: #ffffff;
   --accent-foreground: #0a0a0a;
   --destructive: #ff3b3b;
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.1);
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-faint: rgba(255, 255, 255, 0.05);
   --input: #141414;
+  --input-background: #141414;
+  --switch-background: #333333;
   --ring: rgba(255, 255, 255, 0.4);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
+
   --chart-1: #ffffff;
   --chart-2: #888888;
   --chart-3: #555555;
   --chart-4: #333333;
   --chart-5: #ff3b3b;
+
   --sidebar: #0a0a0a;
   --sidebar-foreground: #f0f0f0;
   --sidebar-primary: #ffffff;
@@ -81,6 +110,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -91,6 +121,8 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -126,56 +158,18 @@
 
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
-
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
 
   html {
     font-size: var(--font-size);
   }
 
-  h1 {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h4 {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  label {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  button {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  input {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-normal);
-    line-height: 1.5;
-  }
+  h1 { font-size: var(--text-2xl); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  h2 { font-size: var(--text-xl); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  h3 { font-size: var(--text-lg); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  h4 { font-size: var(--text-base); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  label { font-size: var(--text-base); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  button { font-size: var(--text-base); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  input { font-size: var(--text-base); font-weight: var(--font-weight-normal); line-height: 1.5; }
 }
