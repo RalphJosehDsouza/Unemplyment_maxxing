@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { pool } from './db.js';
 import authRoutes from './routes/auth.js';
 import vehicleRoutes from './routes/vehicles.js';
+import analyticsRoutes from './routes/analytics.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Verify DB connectivity, then start the server.
 pool
