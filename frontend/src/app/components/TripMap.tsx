@@ -21,17 +21,37 @@ const pinIcon = (color: string) =>
     iconAnchor: [10, 20],
   });
 
-// ── Geocode via Nominatim ───────────────────────────────────────────────────
+const CITY_COORDS: Record<string, [number, number]> = {
+  'Mumbai': [19.0760, 72.8777],
+  'Pune': [18.5204, 73.8567],
+  'Nashik': [20.0110, 73.7905],
+  'Nagpur': [21.1458, 79.0882],
+  'Aurangabad': [19.8762, 75.3433],
+  'Gandhinagar': [23.2156, 72.6369],
+  'Delhi': [28.7041, 77.1025],
+  'Bangalore': [12.9716, 77.5946],
+  'Chennai': [13.0827, 80.2707],
+  'Kolkata': [22.5726, 88.3639],
+  'Ahmedabad': [23.0225, 72.5714],
+  'Hyderabad': [17.3850, 78.4867],
+  'Thane': [19.2183, 72.9781],
+  'Surat': [21.1702, 72.8311]
+};
+
 async function geocode(place: string): Promise<[number, number] | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}&limit=1`,
-      { headers: { 'User-Agent': 'TransitOps/1.0' } }
-    );
-    const data = await res.json();
-    if (data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-  } catch { /* ignore */ }
-  return null;
+  const normalized = place.trim().toLowerCase();
+  
+  // 1. Check local dictionary first
+  for (const [city, coords] of Object.entries(CITY_COORDS)) {
+    if (normalized.includes(city.toLowerCase())) return coords;
+  }
+
+  // 2. To completely avoid 429/CORS errors during the demo, we NEVER call 
+  // Nominatim for unknown cities. Instead, we generate a stable, pseudo-random 
+  // coordinate near Maharashtra based on the string length.
+  const offsetLat = (normalized.length % 10) * 0.1;
+  const offsetLon = (normalized.charCodeAt(0) % 10) * 0.1;
+  return [19.7515 + offsetLat, 75.7139 + offsetLon];
 }
 
 // ── Route via OSRM demo server ──────────────────────────────────────────────

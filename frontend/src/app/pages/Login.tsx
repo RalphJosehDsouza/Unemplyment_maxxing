@@ -92,7 +92,7 @@ export default function Login() {
       login(data.token, data.user);
       navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Invalid credentials.');
+      setError('Incorrect password.');
     } finally {
       setIsLoading(false);
     }

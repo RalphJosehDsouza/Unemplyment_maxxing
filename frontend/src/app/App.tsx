@@ -35,6 +35,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['FLEET_MANAGER', 'FINANCIAL_ANALYST']} />}>
             <Route path="/fuel" element={<Fuel />} />
             <Route path="/reports" element={<Reports />} />
+          </Route>
           <Route element={<ProtectedRoute allowedRoles={['FLEET_MANAGER']} />}>
             <Route path="/maintenance" element={<Maintenance />} />
           </Route>
