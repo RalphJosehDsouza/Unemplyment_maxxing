@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Eye, EyeOff, Truck, Shield, BarChart2, ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
@@ -42,6 +42,23 @@ function DotGrid() {
 const mono = "'JetBrains Mono', monospace";
 const display = "'Barlow Condensed', sans-serif";
 
+// Auto-looping delivery animation — re-triggers the truck button on an interval.
+// Clicks are ignored while it's mid-animation, so it simply keeps cycling. No label.
+function LoopingDelivery({ isNight }: { isNight: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const trigger = () => ref.current?.querySelector<HTMLButtonElement>(".cob-hit")?.click();
+    trigger();
+    const id = setInterval(trigger, 700);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div ref={ref}>
+      <CompleteOrderButton mode={isNight ? "night" : "day"} highDefinition truckColor="#3b82f6" label="" successLabel="" />
+    </div>
+  );
+}
+
 export default function Login() {
   const { login } = useAuth();
   const { isNight, setTheme } = useTheme();
@@ -75,7 +92,7 @@ export default function Login() {
       login(data.token, data.user);
       navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Invalid credentials.');
+      setError('Incorrect password.');
     } finally {
       setIsLoading(false);
     }
@@ -136,15 +153,9 @@ export default function Login() {
               Centralize fleet dispatch, maintenance, compliance, and expense tracking in one operational command center.
             </p>
 
-            {/* Live demo button */}
+            {/* Live delivery animation (auto-looping, no label) */}
             <div className="mt-2">
-              <CompleteOrderButton
-                mode={isNight ? "night" : "day"}
-                highDefinition
-                truckColor="#3b82f6"
-                label="Click here!"
-                successLabel="Delivered"
-              />
+              <LoopingDelivery isNight={isNight} />
             </div>
 
             {/* Stats */}

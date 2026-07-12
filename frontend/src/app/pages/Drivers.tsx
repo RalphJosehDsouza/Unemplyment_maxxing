@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Plus, Search, Pencil, Trash2, X, AlertCircle, Truck } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, X, AlertCircle, Users, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ApiError } from '../../lib/api';
-import { vehiclesApi } from '../../lib/services/vehicles';
-import { VEHICLE_STATUSES, STATUS_STYLES, Vehicle } from '../../lib/constants';
+import { driversApi, DRIVER_STATUSES, Driver } from '../../lib/services/drivers';
+import { STATUS_STYLES } from '../../lib/constants';
 import { StatusBadge } from '../components/StatusBadge';
 
 const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
@@ -28,62 +28,63 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
   fontFamily: 'inherit',
 };
+const errorBox: React.CSSProperties = { background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)' };
 
 interface FormState {
-  registration_number: string;
-  model: string;
-  vehicle_type: string;
-  max_load_capacity: string;
-  current_odometer: string;
-  acquisition_cost: string;
+  name: string;
+  license_number: string;
+  license_category: string;
+  license_expiry: string;
+  contact_number: string;
+  safety_score: string;
   status: string;
 }
 
 const EMPTY_FORM: FormState = {
-  registration_number: '',
-  model: '',
-  vehicle_type: '',
-  max_load_capacity: '',
-  current_odometer: '0',
-  acquisition_cost: '0',
+  name: '',
+  license_number: '',
+  license_category: '',
+  license_expiry: '',
+  contact_number: '',
+  safety_score: '100',
   status: 'AVAILABLE',
 };
 
-const inr = (n: number) => '₹' + n.toLocaleString('en-IN');
+function scoreColor(s: number) {
+  if (s >= 85) return '#10b981';
+  if (s >= 70) return '#f59e0b';
+  return '#ef4444';
+}
 
-const errorBox: React.CSSProperties = {
-  background: 'rgba(220,38,38,0.08)',
-  border: '1px solid rgba(220,38,38,0.3)',
-};
-
-export default function Vehicles() {
+export default function Drivers() {
   const { user } = useAuth();
-  const canManage = user?.role === 'FLEET_MANAGER' || user?.role === 'ADMIN';
+  const canManage = ['FLEET_MANAGER', 'SAFETY_OFFICER', 'ADMIN'].includes(user?.role || '');
 
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [expiringOnly, setExpiringOnly] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Vehicle | null>(null);
+  const [editing, setEditing] = useState<Driver | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const [deleting, setDeleting] = useState<Vehicle | null>(null);
+  const [deleting, setDeleting] = useState<Driver | null>(null);
   const [deleteError, setDeleteError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await vehiclesApi.list();
-      setVehicles(data.vehicles);
+      const data = await driversApi.list();
+      setDrivers(data.drivers);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Failed to load vehicles');
+      setError(e instanceof ApiError ? e.message : 'Failed to load drivers');
     } finally {
       setLoading(false);
     }
@@ -95,19 +96,21 @@ export default function Vehicles() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return vehicles.filter((v) => {
-      if (statusFilter && v.status !== statusFilter) return false;
-      if (q && !v.registration_number.toLowerCase().includes(q) && !v.model.toLowerCase().includes(q) && !v.vehicle_type.toLowerCase().includes(q))
-        return false;
+    return drivers.filter((d) => {
+      if (statusFilter && d.status !== statusFilter) return false;
+      if (expiringOnly && !d.license_expired) return false;
+      if (q && !d.name.toLowerCase().includes(q) && !d.license_number.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [vehicles, search, statusFilter]);
+  }, [drivers, search, statusFilter, expiringOnly]);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { AVAILABLE: 0, ON_TRIP: 0, IN_SHOP: 0, RETIRED: 0 };
-    vehicles.forEach((v) => (c[v.status] = (c[v.status] || 0) + 1));
+    const c: Record<string, number> = { AVAILABLE: 0, ON_TRIP: 0, OFF_DUTY: 0, SUSPENDED: 0 };
+    drivers.forEach((d) => (c[d.status] = (c[d.status] || 0) + 1));
     return c;
-  }, [vehicles]);
+  }, [drivers]);
+
+  const expiredCount = useMemo(() => drivers.filter((d) => d.license_expired).length, [drivers]);
 
   function openCreate() {
     setEditing(null);
@@ -116,16 +119,16 @@ export default function Vehicles() {
     setModalOpen(true);
   }
 
-  function openEdit(v: Vehicle) {
-    setEditing(v);
+  function openEdit(d: Driver) {
+    setEditing(d);
     setForm({
-      registration_number: v.registration_number,
-      model: v.model,
-      vehicle_type: v.vehicle_type,
-      max_load_capacity: String(v.max_load_capacity),
-      current_odometer: String(v.current_odometer),
-      acquisition_cost: String(v.acquisition_cost),
-      status: v.status,
+      name: d.name,
+      license_number: d.license_number,
+      license_category: d.license_category || '',
+      license_expiry: d.license_expiry,
+      contact_number: d.contact_number || '',
+      safety_score: String(d.safety_score),
+      status: d.status,
     });
     setFormError('');
     setModalOpen(true);
@@ -135,36 +138,45 @@ export default function Vehicles() {
     e.preventDefault();
     setFormError('');
 
-    if (!form.registration_number.trim() || !form.model.trim() || !form.vehicle_type.trim()) {
-      setFormError('Registration number, model and type are required.');
+    if (!form.name.trim() || !form.license_number.trim()) {
+      setFormError('Name and license number are required.');
       return;
     }
-    if (!form.max_load_capacity || Number(form.max_load_capacity) < 0) {
-      setFormError('Max load capacity must be a non-negative number.');
+    if (!form.license_category.trim()) {
+      setFormError('License category is required.');
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.license_expiry)) {
+      setFormError('License expiry date is required.');
+      return;
+    }
+    const score = Number(form.safety_score);
+    if (!Number.isInteger(score) || score < 0 || score > 100) {
+      setFormError('Safety score must be a whole number between 0 and 100.');
       return;
     }
 
     const payload = {
-      registration_number: form.registration_number.trim(),
-      model: form.model.trim(),
-      vehicle_type: form.vehicle_type.trim(),
-      max_load_capacity: Number(form.max_load_capacity),
-      current_odometer: Number(form.current_odometer || 0),
-      acquisition_cost: Number(form.acquisition_cost || 0),
+      name: form.name.trim(),
+      license_number: form.license_number.trim(),
+      license_category: form.license_category.trim(),
+      license_expiry: form.license_expiry,
+      contact_number: form.contact_number.trim() || undefined,
+      safety_score: score,
       status: form.status,
     };
 
     setSaving(true);
     try {
       if (editing) {
-        await vehiclesApi.update(editing.id, payload);
+        await driversApi.update(editing.id, payload);
       } else {
-        await vehiclesApi.create(payload);
+        await driversApi.create(payload);
       }
       setModalOpen(false);
       await load();
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : 'Failed to save vehicle');
+      setFormError(e instanceof ApiError ? e.message : 'Failed to save driver');
     } finally {
       setSaving(false);
     }
@@ -174,11 +186,11 @@ export default function Vehicles() {
     if (!deleting) return;
     setDeleteError('');
     try {
-      await vehiclesApi.remove(deleting.id);
+      await driversApi.remove(deleting.id);
       setDeleting(null);
       await load();
     } catch (e) {
-      setDeleteError(e instanceof ApiError ? e.message : 'Failed to delete vehicle');
+      setDeleteError(e instanceof ApiError ? e.message : 'Failed to delete driver');
     }
   }
 
@@ -188,9 +200,9 @@ export default function Vehicles() {
       <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
         <div>
           <div style={{ ...mono, fontSize: '0.6rem', letterSpacing: '0.2em', color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-            Fleet Registry
+            Compliance & Roster
           </div>
-          <h1 style={{ ...display, fontSize: '2.2rem', fontWeight: 700, lineHeight: 1, textTransform: 'uppercase', color: 'var(--foreground)' }}>Vehicles</h1>
+          <h1 style={{ ...display, fontSize: '2.2rem', fontWeight: 700, lineHeight: 1, textTransform: 'uppercase', color: 'var(--foreground)' }}>Drivers</h1>
         </div>
         {canManage && (
           <button
@@ -199,14 +211,14 @@ export default function Vehicles() {
             style={{ background: 'var(--primary)', color: 'var(--primary-foreground)', fontWeight: 700, fontSize: '0.8rem', padding: '0.6rem 1rem', border: 'none', cursor: 'pointer', letterSpacing: '0.03em' }}
           >
             <Plus size={15} strokeWidth={2.5} />
-            Add Vehicle
+            Add Driver
           </button>
         )}
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px mb-6" style={{ background: 'var(--border)', border: '1px solid var(--border)' }}>
-        {VEHICLE_STATUSES.map((s) => (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px mb-3" style={{ background: 'var(--border)', border: '1px solid var(--border)' }}>
+        {DRIVER_STATUSES.map((s) => (
           <button
             key={s}
             onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
@@ -221,25 +233,35 @@ export default function Vehicles() {
         ))}
       </div>
 
+      {/* Expired-license alert / filter */}
+      {expiredCount > 0 && (
+        <button
+          onClick={() => setExpiringOnly((v) => !v)}
+          className="flex items-center gap-2 w-full mb-6 p-3 transition-colors"
+          style={{ background: expiringOnly ? 'rgba(239,68,68,0.14)' : 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', textAlign: 'left' }}
+        >
+          <AlertTriangle size={15} color="#ef4444" />
+          <span style={{ fontSize: '0.8rem', color: '#ef4444' }}>
+            {expiredCount} driver{expiredCount > 1 ? 's have' : ' has'} an expired license — cannot be dispatched.
+          </span>
+          <span style={{ ...mono, fontSize: '0.6rem', letterSpacing: '0.1em', color: '#ef4444', marginLeft: 'auto' }}>
+            {expiringOnly ? 'SHOW ALL' : 'REVIEW'}
+          </span>
+        </button>
+      )}
+
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap mb-4">
         <div className="relative flex-1 min-w-[220px]">
           <Search size={14} color="var(--muted-foreground)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by registration, model or type…"
-            style={{ ...inputStyle, paddingLeft: '2.2rem' }}
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or license number…" style={{ ...inputStyle, paddingLeft: '2.2rem' }} />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150, cursor: 'pointer' }}>
           <option value="">All statuses</option>
-          {VEHICLE_STATUSES.map((s) => (
-            <option key={s} value={s}>{STATUS_STYLES[s].label}</option>
-          ))}
+          {DRIVER_STATUSES.map((s) => (<option key={s} value={s}>{STATUS_STYLES[s].label}</option>))}
         </select>
-        {(search || statusFilter) && (
-          <button onClick={() => { setSearch(''); setStatusFilter(''); }} style={{ ...mono, fontSize: '0.65rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.08em' }}>
+        {(search || statusFilter || expiringOnly) && (
+          <button onClick={() => { setSearch(''); setStatusFilter(''); setExpiringOnly(false); }} style={{ ...mono, fontSize: '0.65rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.08em' }}>
             CLEAR
           </button>
         )}
@@ -254,11 +276,11 @@ export default function Vehicles() {
 
       {/* Table (contained scroll — ~5 rows, header sticks) */}
       <div style={{ border: '1px solid var(--border)', background: 'var(--surface)', overflow: 'auto', maxHeight: 340 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Registration', 'Model', 'Type', 'Capacity', 'Odometer', 'Cost', 'Status', ''].map((h, i) => (
-                <th key={i} style={{ ...mono, fontSize: '0.56rem', letterSpacing: '0.14em', color: 'var(--muted-foreground)', textTransform: 'uppercase', textAlign: i >= 3 && i <= 5 ? 'right' : 'left', padding: '0.7rem 1rem', fontWeight: 400, whiteSpace: 'nowrap', position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
+              {['Driver', 'License No.', 'Category', 'Expiry', 'Safety', 'Contact', 'Status', ''].map((h, i) => (
+                <th key={i} style={{ ...mono, fontSize: '0.56rem', letterSpacing: '0.14em', color: 'var(--muted-foreground)', textTransform: 'uppercase', textAlign: 'left', padding: '0.7rem 1rem', fontWeight: 400, whiteSpace: 'nowrap', position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
                   {h}
                 </th>
               ))}
@@ -266,33 +288,45 @@ export default function Vehicles() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)', fontSize: '0.82rem' }}>Loading fleet…</td></tr>
+              <tr><td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)', fontSize: '0.82rem' }}>Loading roster…</td></tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ padding: '3.5rem', textAlign: 'center' }}>
-                  <Truck size={28} color="var(--text-faint)" style={{ margin: '0 auto 0.75rem' }} />
+                  <Users size={28} color="var(--text-faint)" style={{ margin: '0 auto 0.75rem' }} />
                   <div style={{ color: 'var(--muted-foreground)', fontSize: '0.85rem' }}>
-                    {vehicles.length === 0 ? 'No vehicles registered yet.' : 'No vehicles match your filters.'}
+                    {drivers.length === 0 ? 'No drivers registered yet.' : 'No drivers match your filters.'}
                   </div>
                 </td>
               </tr>
             ) : (
-              filtered.map((v) => (
-                <tr key={v.id} style={{ borderBottom: '1px solid var(--border-faint)' }}>
-                  <td style={{ padding: '0.85rem 1rem', ...mono, fontSize: '0.75rem', color: 'var(--foreground)', whiteSpace: 'nowrap' }}>{v.registration_number}</td>
-                  <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--foreground)' }}>{v.model}</td>
-                  <td style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{v.vehicle_type}</td>
-                  <td style={{ padding: '0.85rem 1rem', ...mono, fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'right', whiteSpace: 'nowrap' }}>{v.max_load_capacity.toLocaleString()} kg</td>
-                  <td style={{ padding: '0.85rem 1rem', ...mono, fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'right', whiteSpace: 'nowrap' }}>{v.current_odometer.toLocaleString()} km</td>
-                  <td style={{ padding: '0.85rem 1rem', ...mono, fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'right', whiteSpace: 'nowrap' }}>{inr(v.acquisition_cost)}</td>
-                  <td style={{ padding: '0.85rem 1rem' }}><StatusBadge status={v.status} /></td>
+              filtered.map((d) => (
+                <tr key={d.id} style={{ borderBottom: '1px solid var(--border-faint)' }}>
+                  <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', color: 'var(--foreground)', whiteSpace: 'nowrap' }}>{d.name}</td>
+                  <td style={{ padding: '0.85rem 1rem', ...mono, fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{d.license_number}</td>
+                  <td style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{d.license_category || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem', ...mono, fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
+                    <span style={{ color: d.license_expired ? '#ef4444' : 'var(--text-muted)' }}>{d.license_expiry}</span>
+                    {d.license_expired && (
+                      <span style={{ ...mono, fontSize: '0.55rem', letterSpacing: '0.08em', color: '#ef4444', marginLeft: 6, border: '1px solid rgba(239,68,68,0.4)', padding: '1px 4px' }}>EXPIRED</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
+                    <div className="flex items-center gap-2">
+                      <div style={{ width: 44, height: 5, background: 'var(--border)', position: 'relative' }}>
+                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${d.safety_score}%`, background: scoreColor(d.safety_score) }} />
+                      </div>
+                      <span style={{ ...mono, fontSize: '0.7rem', color: 'var(--text-muted)' }}>{d.safety_score}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '0.85rem 1rem', ...mono, fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{d.contact_number || '—'}</td>
+                  <td style={{ padding: '0.85rem 1rem' }}><StatusBadge status={d.status} /></td>
                   <td style={{ padding: '0.85rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     {canManage && (
                       <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => openEdit(v)} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
+                        <button onClick={() => openEdit(d)} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
                           <Pencil size={14} />
                         </button>
-                        <button onClick={() => { setDeleting(v); setDeleteError(''); }} title="Delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
+                        <button onClick={() => { setDeleting(d); setDeleteError(''); }} title="Delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -305,7 +339,7 @@ export default function Vehicles() {
         </table>
       </div>
       <div style={{ ...mono, fontSize: '0.62rem', color: 'var(--text-faint)', letterSpacing: '0.1em', marginTop: '0.75rem' }}>
-        {filtered.length} OF {vehicles.length} VEHICLES
+        {filtered.length} OF {drivers.length} DRIVERS
       </div>
 
       {/* ── Add/Edit Modal ── */}
@@ -313,27 +347,31 @@ export default function Vehicles() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => !saving && setModalOpen(false)}>
           <div className="w-full max-w-[480px]" style={{ background: 'var(--card)', border: '1px solid var(--border-strong)' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <h2 style={{ ...display, fontSize: '1.3rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--foreground)' }}>{editing ? 'Edit Vehicle' : 'Register Vehicle'}</h2>
+              <h2 style={{ ...display, fontSize: '1.3rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--foreground)' }}>{editing ? 'Edit Driver' : 'Register Driver'}</h2>
               <button onClick={() => !saving && setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
             </div>
             <form onSubmit={submitForm} className="px-5 py-5">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label style={labelStyle}>Registration Number</label>
-                  <input value={form.registration_number} onChange={(e) => setForm({ ...form, registration_number: e.target.value })} placeholder="MH12-AB-1234" style={inputStyle} autoFocus />
-                </div>
-                <div className="col-span-2">
-                  <label style={labelStyle}>Model / Name</label>
-                  <input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="Tata Ace Gold" style={inputStyle} />
+                  <label style={labelStyle}>Full Name</label>
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Alex Fernandes" style={inputStyle} autoFocus />
                 </div>
                 <div>
-                  <label style={labelStyle}>Type</label>
-                  <input value={form.vehicle_type} onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })} placeholder="Mini Truck" style={inputStyle} />
+                  <label style={labelStyle}>License Number</label>
+                  <input value={form.license_number} onChange={(e) => setForm({ ...form, license_number: e.target.value })} placeholder="MH-DL-2019-0012" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>License Category</label>
+                  <input value={form.license_category} onChange={(e) => setForm({ ...form, license_category: e.target.value })} placeholder="LMV / HMV" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>License Expiry</label>
+                  <input type="date" value={form.license_expiry} onChange={(e) => setForm({ ...form, license_expiry: e.target.value })} style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Status</label>
                   <select disabled={form.status === 'ON_TRIP'} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} style={{ ...inputStyle, cursor: form.status === 'ON_TRIP' ? 'not-allowed' : 'pointer', opacity: form.status === 'ON_TRIP' ? 0.7 : 1 }}>
-                    {VEHICLE_STATUSES.map((s) => (
+                    {DRIVER_STATUSES.map((s) => (
                       <option key={s} value={s} disabled={s === 'ON_TRIP'}>
                         {STATUS_STYLES[s].label}
                       </option>
@@ -341,16 +379,12 @@ export default function Vehicles() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Max Load (kg)</label>
-                  <input type="number" min="0" step="any" value={form.max_load_capacity} onChange={(e) => setForm({ ...form, max_load_capacity: e.target.value })} placeholder="500" style={inputStyle} />
+                  <label style={labelStyle}>Safety Score (0–100)</label>
+                  <input type="number" min="0" max="100" step="1" value={form.safety_score} onChange={(e) => setForm({ ...form, safety_score: e.target.value })} style={inputStyle} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Odometer (km)</label>
-                  <input type="number" min="0" step="any" value={form.current_odometer} onChange={(e) => setForm({ ...form, current_odometer: e.target.value })} style={inputStyle} />
-                </div>
-                <div className="col-span-2">
-                  <label style={labelStyle}>Acquisition Cost (₹)</label>
-                  <input type="number" min="0" step="any" value={form.acquisition_cost} onChange={(e) => setForm({ ...form, acquisition_cost: e.target.value })} style={inputStyle} />
+                  <label style={labelStyle}>Contact Number</label>
+                  <input value={form.contact_number} onChange={(e) => setForm({ ...form, contact_number: e.target.value })} placeholder="+91 98200 11223" style={inputStyle} />
                 </div>
               </div>
 
@@ -379,9 +413,9 @@ export default function Vehicles() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={() => setDeleting(null)}>
           <div className="w-full max-w-[400px]" style={{ background: 'var(--card)', border: '1px solid var(--border-strong)' }} onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-5">
-              <h2 style={{ ...display, fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem', color: 'var(--foreground)' }}>Delete Vehicle</h2>
+              <h2 style={{ ...display, fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem', color: 'var(--foreground)' }}>Delete Driver</h2>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-                Remove <span style={{ ...mono, color: 'var(--foreground)' }}>{deleting.registration_number}</span> ({deleting.model})? This cannot be undone.
+                Remove <span style={{ color: 'var(--foreground)' }}>{deleting.name}</span> (<span style={{ ...mono }}>{deleting.license_number}</span>)? This cannot be undone.
               </p>
               {deleteError && (
                 <div className="flex items-center gap-2 mt-3 p-2.5" style={errorBox}>

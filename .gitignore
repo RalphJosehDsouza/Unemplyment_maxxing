@@ -61,3 +61,11 @@ out/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Workspace Specific
+backend/.env
+frontend/.env
+backend/node_modules/
+frontend/node_modules/
+temp/
+.env.*

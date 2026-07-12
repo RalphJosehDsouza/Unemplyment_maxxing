@@ -7,6 +7,7 @@ import {
   Wrench,
   Fuel,
   BarChart2,
+  Sparkles,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -28,11 +29,12 @@ const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ALL },
   { to: '/analytics', label: 'Analytics', icon: BarChart2, roles: ALL },
   { to: '/vehicles', label: 'Vehicles', icon: Truck, roles: ['FLEET_MANAGER'] },
-  { to: '/drivers', label: 'Drivers', icon: Users, roles: ['FLEET_MANAGER', 'SAFETY_OFFICER'], soon: true },
-  { to: '/trips', label: 'Trips', icon: RouteIcon, roles: ALL, soon: true },
+  { to: '/drivers', label: 'Drivers', icon: Users, roles: ['FLEET_MANAGER', 'SAFETY_OFFICER'] },
+  { to: '/trips', label: 'Trips', icon: RouteIcon, roles: ALL },
+  { to: '/dispatch', label: 'Dispatch Advisor', icon: Sparkles, roles: ['FLEET_MANAGER'] },
   { to: '/maintenance', label: 'Maintenance', icon: Wrench, roles: ['FLEET_MANAGER'], soon: true },
-  { to: '/fuel', label: 'Fuel & Expenses', icon: Fuel, roles: ['FINANCIAL_ANALYST', 'FLEET_MANAGER'], soon: true },
-  { to: '/reports', label: 'Reports', icon: BarChart2, roles: ['FINANCIAL_ANALYST'], soon: true },
+  { to: '/fuel', label: 'Fuel & Expenses', icon: Fuel, roles: ['FINANCIAL_ANALYST', 'FLEET_MANAGER'] },
+  { to: '/reports', label: 'Reports', icon: BarChart2, roles: ['FINANCIAL_ANALYST', 'FLEET_MANAGER'] },
 ];
 
 const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
