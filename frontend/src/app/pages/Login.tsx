@@ -59,7 +59,12 @@ function DotGrid() {
   );
 }
 
-export default function App() {
+import { useNavigate } from 'react-router';
+import { useAuth } from '../../context/AuthContext';
+
+export default function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState("fleet_manager");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,7 +76,7 @@ export default function App() {
 
   const activeRole = roles.find((r) => r.id === selectedRole)!;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!email || !password) {
@@ -83,10 +88,27 @@ export default function App() {
       return;
     }
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role: selectedRole })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+      
+      login(data.token, data.user);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials.");
+    } finally {
       setIsLoading(false);
-      setError("Invalid credentials. Use the demo credentials listed below.");
-    }, 1400);
+    }
   };
 
   const inputStyle = (focused: boolean): React.CSSProperties => ({

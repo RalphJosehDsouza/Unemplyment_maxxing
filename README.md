@@ -175,6 +175,13 @@ PORT=5000
 CLIENT_URL=http://localhost:5173
 ```
 
+## Running the Application
+
+- **Backend Only**: `npm run server`
+- **Frontend Only**: `npm run dev`
+- **Full Stack**: `npm run dev:all`
+- **Seed Database**: `npm run seed`
+
 ---
 
 ## Authentication Flow (MERN)
