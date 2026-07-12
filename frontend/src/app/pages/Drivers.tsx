@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Plus, Search, Pencil, Trash2, X, AlertCircle, Users, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, X, AlertCircle, Users, AlertTriangle, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ApiError } from '../../lib/api';
 import { driversApi, DRIVER_STATUSES, Driver } from '../../lib/services/drivers';
+import { notificationsApi, ReminderResult } from '../../lib/services/notifications';
 import { STATUS_STYLES } from '../../lib/constants';
 import { StatusBadge } from '../components/StatusBadge';
 
@@ -76,6 +77,9 @@ export default function Drivers() {
 
   const [deleting, setDeleting] = useState<Driver | null>(null);
   const [deleteError, setDeleteError] = useState('');
+
+  const [reminder, setReminder] = useState<ReminderResult | null>(null);
+  const [sending, setSending] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -194,6 +198,18 @@ export default function Drivers() {
     }
   }
 
+  async function sendReminders() {
+    setSending(true);
+    setReminder(null);
+    try {
+      setReminder(await notificationsApi.sendLicenseReminders(30));
+    } catch (e) {
+      setReminder({ sent: false, count: 0, message: e instanceof ApiError ? e.message : 'Failed to send reminders' });
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="px-6 md:px-10 py-8 max-w-[1200px]">
       {/* Header */}
@@ -205,16 +221,43 @@ export default function Drivers() {
           <h1 style={{ ...display, fontSize: '2.2rem', fontWeight: 700, lineHeight: 1, textTransform: 'uppercase', color: 'var(--foreground)' }}>Drivers</h1>
         </div>
         {canManage && (
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2"
-            style={{ background: 'var(--primary)', color: 'var(--primary-foreground)', fontWeight: 700, fontSize: '0.8rem', padding: '0.6rem 1rem', border: 'none', cursor: 'pointer', letterSpacing: '0.03em' }}
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            Add Driver
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={sendReminders}
+              disabled={sending}
+              className="flex items-center gap-2"
+              style={{ background: 'transparent', color: 'var(--foreground)', fontWeight: 600, fontSize: '0.8rem', padding: '0.6rem 1rem', border: '1px solid var(--border-strong)', cursor: sending ? 'not-allowed' : 'pointer', letterSpacing: '0.03em', opacity: sending ? 0.6 : 1 }}
+            >
+              <Mail size={15} /> {sending ? 'Sending…' : 'Email Reminders'}
+            </button>
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2"
+              style={{ background: 'var(--primary)', color: 'var(--primary-foreground)', fontWeight: 700, fontSize: '0.8rem', padding: '0.6rem 1rem', border: 'none', cursor: 'pointer', letterSpacing: '0.03em' }}
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              Add Driver
+            </button>
+          </div>
         )}
       </div>
+
+      {/* License reminder result */}
+      {reminder && (
+        <div className="flex items-start gap-2.5 w-full mb-6 p-3" style={{ background: reminder.sent ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)', border: `1px solid ${reminder.sent ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
+          <Mail size={15} color={reminder.sent ? '#10b981' : '#f59e0b'} style={{ marginTop: 1, flexShrink: 0 }} />
+          <div style={{ fontSize: '0.8rem', color: 'var(--foreground)', lineHeight: 1.5 }}>
+            {reminder.count === 0 ? (
+              'No licences expiring within 30 days — nothing to send.'
+            ) : reminder.sent ? (
+              <>Reminder for <b>{reminder.count}</b> driver(s) sent to <span style={{ ...mono }}>{reminder.recipient}</span>.{reminder.preview && <> <a href={reminder.preview} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>View email →</a></>}</>
+            ) : (
+              <>Found <b>{reminder.count}</b> driver(s) needing attention, but the email couldn’t be sent{reminder.mailError ? ` (${reminder.mailError})` : ''}.</>
+            )}
+          </div>
+          <button onClick={() => setReminder(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={14} /></button>
+        </div>
+      )}
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px mb-3" style={{ background: 'var(--border)', border: '1px solid var(--border)' }}>
