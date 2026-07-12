@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { vehiclesApi } from '../../lib/services/vehicles';
 import { ROLE_LABELS, STATUS_STYLES, VEHICLE_STATUSES, Vehicle } from '../../lib/constants';
-import CompleteOrderButton from '../../components/buttons/completeOrderButton';
 
 // Mock data hooks for Trips and Drivers (since backend endpoints don't exist yet)
 const useMockLiveStats = () => {
@@ -28,8 +25,6 @@ const display: React.CSSProperties = { fontFamily: "'Barlow Condensed', sans-ser
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { isNight } = useTheme();
-  const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   
   // Filters State
@@ -67,8 +62,6 @@ export default function Dashboard() {
     // but the UI reflects the requirement.
     return true;
   });
-
-  const canManageFleet = user?.role === 'FLEET_MANAGER' || user?.role === 'ADMIN';
 
   return (
     <div className="px-6 md:px-10 py-8 max-w-[1200px] mx-auto space-y-8">
@@ -144,24 +137,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {canManageFleet && (
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', padding: '1.75rem', borderRadius: '0.5rem' }}>
-          <div style={{ ...mono, fontSize: '0.58rem', letterSpacing: '0.16em', color: 'var(--muted-foreground)', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
-            Quick Action
-          </div>
-          <div style={{ ...display, fontSize: '1.4rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--foreground)', marginBottom: '1.1rem' }}>
-            Vehicle Registry
-          </div>
-          <CompleteOrderButton
-            mode={isNight ? 'night' : 'day'}
-            highDefinition
-            truckColor="#3b82f6"
-            label="Open Vehicle Registry"
-            successLabel="Registry Ready"
-            onComplete={() => navigate('/vehicles')}
-          />
-        </div>
-      )}
     </div>
   );
 }

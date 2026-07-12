@@ -127,15 +127,16 @@ export default function TripMap({ source, destination, status }: TripMapProps) {
   const truckPos = data.route[midIdx] || data.from;
 
   return (
-    <div style={{ height: 180, border: '1px solid var(--border)', overflow: 'hidden', marginTop: 8 }}>
+    <div style={{ height: 240, border: '1px solid var(--border)', overflow: 'hidden', marginTop: 8 }}>
       <MapContainer
         center={data.from}
         zoom={10}
         style={{ height: '100%', width: '100%' }}
-        zoomControl={false}
+        zoomControl={true}
         attributionControl={false}
         scrollWheelZoom={false}
-        dragging={false}
+        doubleClickZoom={true}
+        dragging={true}
       >
         <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
         <FitBounds points={[data.from, data.to]} />
