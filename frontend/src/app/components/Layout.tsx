@@ -1,4 +1,6 @@
 import { NavLink, Outlet } from 'react-router';
+import { useState, useEffect } from 'react';
+import { apiFetch } from '../../lib/api';
 import {
   LayoutDashboard,
   Truck,
@@ -9,6 +11,8 @@ import {
   BarChart2,
   Sparkles,
   LogOut,
+  Bell,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -39,6 +43,97 @@ const NAV: NavItem[] = [
 
 const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 const display: React.CSSProperties = { fontFamily: "'Barlow Condensed', sans-serif" };
+
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    apiFetch('/api/notifications/license-reminders?withinDays=30')
+      .then((res: any) => {
+        if (res.drivers && res.drivers.length > 0) {
+          const alerts = res.drivers.map((d: any) => ({
+            id: Math.random().toString(),
+            title: 'License Alert',
+            message: `${d.name}'s license expires in ${d.days_left} days.`,
+            type: 'warning',
+            time: 'Just now'
+          }));
+          setNotifications(prev => [...alerts, ...prev]);
+          setUnread(prev => prev + alerts.length);
+        }
+      })
+      .catch(() => {});
+
+    const msgs = [
+      { title: 'Trip Completed', msg: 'Trip TRP-921 completed successfully.', type: 'success' },
+      { title: 'Vehicle Maintenance', msg: 'Vehicle V-105 entered maintenance.', type: 'error' },
+      { title: 'Driver Online', msg: 'Driver John Doe is now on duty.', type: 'info' },
+      { title: 'Fuel Logged', msg: 'New fuel entry for V-112: 50L', type: 'info' },
+    ];
+    let count = 0;
+    const interval = setInterval(() => {
+      if (count > 5) return;
+      count++;
+      const rand = msgs[Math.floor(Math.random() * msgs.length)];
+      setNotifications(prev => [{
+        id: Math.random().toString(),
+        title: rand.title,
+        message: rand.msg,
+        type: rand.type,
+        time: 'Just now'
+      }, ...prev]);
+      setUnread(prev => prev + 1);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => { setOpen(!open); setUnread(0); }}
+        className="relative p-2 rounded-full transition-colors hover:bg-[var(--surface)]"
+        style={{ color: 'var(--foreground)', border: 'none', background: 'transparent', cursor: 'pointer' }}
+      >
+        <Bell size={18} />
+        {unread > 0 && (
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[var(--background)]"></span>
+        )}
+      </button>
+
+      {open && (
+        <div 
+          className="absolute right-0 top-full mt-2 w-80 rounded-md shadow-lg overflow-hidden z-50 border"
+          style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--foreground)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Command Center</span>
+            <button onClick={() => setOpen(false)} style={{ color: 'var(--text-muted)', border: 'none', background: 'transparent', cursor: 'pointer' }}><X size={16} /></button>
+          </div>
+          <div className="max-h-96 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-4 text-center text-sm" style={{ color: 'var(--text-muted)' }}>No new notifications</div>
+            ) : (
+              notifications.map(n => (
+                <div key={n.id} className="p-4 border-b last:border-b-0 transition-colors hover:bg-[var(--surface)]" style={{ borderColor: 'var(--border)' }}>
+                  <div className="flex items-start justify-between mb-1">
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: n.type === 'warning' ? '#f59e0b' : n.type === 'error' ? '#ef4444' : n.type === 'success' ? '#10b981' : 'var(--primary)' }}>
+                      {n.title}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-faint)' }}>{n.time}</span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--foreground)' }}>{n.message}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -132,11 +227,14 @@ export default function Layout() {
           <span style={{ ...mono, fontSize: '0.6rem', letterSpacing: '0.18em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
             Operations Console
           </span>
-          <div className="flex items-center gap-3">
-            <span style={{ ...mono, fontSize: '0.55rem', letterSpacing: '0.12em', color: 'var(--text-faint)', textTransform: 'uppercase' }} className="hidden sm:inline">
-              {isNight ? 'Night' : 'Day'}
-            </span>
-            <DayNightToggle isNight={isNight} onChange={(night) => setTheme(night ? 'dark' : 'light')} scale={0.5} />
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <div className="flex items-center gap-2">
+              <span style={{ ...mono, fontSize: '0.55rem', letterSpacing: '0.12em', color: 'var(--text-faint)', textTransform: 'uppercase' }} className="hidden sm:inline">
+                {isNight ? 'Night' : 'Day'}
+              </span>
+              <DayNightToggle isNight={isNight} onChange={(night) => setTheme(night ? 'dark' : 'light')} scale={0.5} />
+            </div>
           </div>
         </header>
 

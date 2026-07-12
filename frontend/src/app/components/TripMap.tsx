@@ -103,6 +103,7 @@ export default function TripMap({ source, destination, status }: TripMapProps) {
   const [data, setData] = useState<RouteData | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [animIdx, setAnimIdx] = useState(0);
   const cacheKey = useRef('');
 
   useEffect(() => {
@@ -119,8 +120,17 @@ export default function TripMap({ source, destination, status }: TripMapProps) {
       const route = await getRoute(from, to);
       setData({ from, to, route });
       setLoading(false);
+      setAnimIdx(0);
     })();
   }, [source, destination]);
+
+  useEffect(() => {
+    if (status !== 'DISPATCHED' || !data || data.route.length === 0) return;
+    const interval = setInterval(() => {
+      setAnimIdx((prev) => (prev + 1) % data.route.length);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [status, data]);
 
   if (loading) {
     return (
@@ -147,9 +157,10 @@ export default function TripMap({ source, destination, status }: TripMapProps) {
     : status === 'CANCELLED' ? '#ef4444'
     : '#f59e0b';
 
-  // Position truck at midpoint of the route
-  const midIdx = Math.floor(data.route.length / 2);
-  const truckPos = data.route[midIdx] || data.from;
+  // Position truck
+  const truckPos = status === 'DISPATCHED' && data.route.length > 0
+    ? data.route[animIdx]
+    : (data.route[Math.floor(data.route.length / 2)] || data.from);
 
   return (
     <div style={{ height: 240, border: '1px solid var(--border)', overflow: 'hidden', marginTop: 8 }}>

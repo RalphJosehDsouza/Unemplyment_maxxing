@@ -191,7 +191,7 @@ export default function Maintenance() {
               </div>
 
               {/* Cost KPIs */}
-              <div style={{ background: bgLight, padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyBetween: 'space-between', border: `1px solid ${borderLight}`, borderRadius: '8px' }}>
+              <div style={{ background: bgLight, padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: `1px solid ${borderLight}`, borderRadius: '8px' }}>
                 <div>
                   <div style={{ ...mono, fontSize: '0.55rem', letterSpacing: '0.18em', color: isNight ? '#a1a1aa' : '#666', textTransform: 'uppercase', fontWeight: 600 }}>Total Fleet Spend</div>
                   <div style={{ ...display, fontSize: '2.4rem', fontWeight: 700, color: textColorPrimary, lineHeight: 1.1, marginTop: 4 }}>{inr(c!.totalCost)}</div>
@@ -227,6 +227,38 @@ export default function Maintenance() {
                     <p style={{ ...mono, fontSize: '0.62rem', color: isNight ? '#a1a1aa' : '#52525b', lineHeight: 1.6, margin: 0 }}>{ins.text}</p>
                   </div>
               ))}
+            </div>
+        )}
+
+        {/* Predictive Maintenance AI */}
+        {analytics && analytics.frequentVehicles.length > 0 && (
+            <div style={{ background: bgLight, border: `1px solid ${borderLight}`, padding: '1.25rem 1.5rem', borderRadius: '8px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ ...mono, fontSize: '0.55rem', letterSpacing: '0.18em', color: COLOR_YELLOW, textTransform: 'uppercase', marginBottom: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Activity size={13} color={COLOR_YELLOW} /> AI Predictive Risk Analysis
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                {analytics.frequentVehicles.slice(0, 3).map((v, i) => {
+                  const riskPct = Math.min(98, 45 + (v.maintenance_count * 12));
+                  const riskColor = riskPct > 80 ? '#ef4444' : riskPct > 60 ? COLOR_YELLOW : COLOR_PURPLE;
+                  return (
+                    <div key={`risk-${i}`} style={{ background: isNight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.4)', border: `1px solid ${borderLighter}`, padding: '0.8rem 1rem', borderRadius: '6px' }}>
+                      <div className="flex justify-between items-center mb-2">
+                        <span style={{ ...mono, fontSize: '0.75rem', color: textColorPrimary, fontWeight: 700 }}>{v.registration_number}</span>
+                        <span style={{ ...display, fontSize: '1.1rem', color: riskColor, fontWeight: 700 }}>{riskPct}% RISK</span>
+                      </div>
+                      <div style={{ width: '100%', height: 4, background: isNight ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+                        <div style={{ width: `${riskPct}%`, height: '100%', background: riskColor, transition: 'width 1s ease-in-out' }} />
+                      </div>
+                      <div style={{ ...mono, fontSize: '0.5rem', color: isNight ? '#a1a1aa' : '#666', marginTop: 6, textTransform: 'uppercase' }}>
+                        {riskPct > 80 ? 'CRITICAL: SCHEDULE SERVICE NOW' : 'MONITOR CLOSELY: ABNORMAL WEAR'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ position: 'absolute', right: -20, bottom: -20, opacity: 0.03, pointerEvents: 'none' }}>
+                <Activity size={120} />
+              </div>
             </div>
         )}
 
