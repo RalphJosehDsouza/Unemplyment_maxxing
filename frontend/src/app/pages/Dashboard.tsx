@@ -1,24 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { vehiclesApi } from '../../lib/services/vehicles';
+import { tripsApi } from '../../lib/services/trips';
+import { driversApi } from '../../lib/services/drivers';
 import { ROLE_LABELS, STATUS_STYLES, VEHICLE_STATUSES, Vehicle } from '../../lib/constants';
-
-// Mock data hooks for Trips and Drivers (since backend endpoints don't exist yet)
-const useMockLiveStats = () => {
-  const [stats, setStats] = useState({ activeTrips: 12, pendingTrips: 5, driversOnDuty: 18 });
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate live updates
-      setStats(prev => ({
-        activeTrips: Math.max(0, prev.activeTrips + (Math.random() > 0.5 ? 1 : -1)),
-        pendingTrips: Math.max(0, prev.pendingTrips + (Math.random() > 0.5 ? 1 : -1)),
-        driversOnDuty: Math.max(0, prev.driversOnDuty + (Math.random() > 0.8 ? 1 : 0))
-      }));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-  return stats;
-};
 
 const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
 const display: React.CSSProperties = { fontFamily: "'Barlow Condensed', sans-serif" };
@@ -26,23 +11,30 @@ const display: React.CSSProperties = { fontFamily: "'Barlow Condensed', sans-ser
 export default function Dashboard() {
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  
+  const [trips, setTrips] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+
   // Filters State
   const [filterType, setFilterType] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterRegion, setFilterRegion] = useState('ALL');
 
-  const { activeTrips, pendingTrips, driversOnDuty } = useMockLiveStats();
-
-  // Fetch live vehicles
+  // Fetch live fleet, trips and drivers (5-second polling)
   useEffect(() => {
-    const fetchVehicles = () => {
+    const fetchAll = () => {
       vehiclesApi.list().then(d => setVehicles(d.vehicles)).catch(() => {});
+      tripsApi.list().then(d => setTrips(d.trips)).catch(() => {});
+      driversApi.list().then(d => setDrivers(d.drivers)).catch(() => {});
     };
-    fetchVehicles();
-    const interval = setInterval(fetchVehicles, 5000); // 5-second polling
+    fetchAll();
+    const interval = setInterval(fetchAll, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Real KPIs derived from live data
+  const activeTrips = trips.filter(t => t.status === 'DISPATCHED').length;
+  const pendingTrips = trips.filter(t => t.status === 'DRAFT').length;
+  const driversOnDuty = drivers.filter(d => d.status === 'AVAILABLE' || d.status === 'ON_TRIP').length;
 
   // Compute KPIs
   const counts: Record<string, number> = { AVAILABLE: 0, ON_TRIP: 0, IN_SHOP: 0, RETIRED: 0 };
